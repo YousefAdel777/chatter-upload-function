@@ -36,13 +36,12 @@ export async function chatterValidateUpload(event: EventGridEvent, context: Invo
 
     if (!(await blobClient.exists())) return;
     try {
-        console.log(blobUrl);
         const buffer = await blobClient.downloadToBuffer(0, 4 * 1024);
         const contentLength = (await blobClient.getProperties()).contentLength;
         const [userId, category, entityId] = blobPath.split("/");
         const type = await fileTypeFromBuffer(buffer);
         
-        if (type || !blobUrl.endsWith(type.ext)) {
+        if (!type || !blobUrl.endsWith(type.ext)) {
             throw new Error("File type mismatch");
         }
         if (category === "stories") {
