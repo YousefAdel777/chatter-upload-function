@@ -10,14 +10,14 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
-  NODE_VERSION: '22.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
+  NODE_VERSION: '22.x'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - name: 'Checkout GitHub Action'
@@ -38,7 +38,7 @@ jobs:
           popd
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+        run: zip release.zip ./* -r -x "*.git*"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -61,19 +61,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Upload package to blob storage
-        uses: azure/cli@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            az storage blob upload \
-              --account-name ${{ secrets.DEPLOYMENT_STORAGE_ACCOUNT }} \
-              --container-name deployments \
-              --name release-${{ github.sha }}.zip \
-              --file release.zip \
-              --auth-mode login
-
-      - name: Deploy to Flex Consumption Function App
+      - name: Deploy to Azure Function App
         uses: azure/cli@v2
         with:
           azcliversion: latest
@@ -81,5 +69,4 @@ jobs:
             az functionapp deployment source config-zip \
               --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
               --name chatterValidateUpload \
-              --src release.zip \
-              --build-remote false
+              --src release.zip
